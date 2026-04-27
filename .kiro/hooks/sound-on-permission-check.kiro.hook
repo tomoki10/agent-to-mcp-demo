@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "権限確認通知",
+  "description": "ツール実行前の権限確認が走ったときにToast通知を表示する",
+  "version": "1",
+  "when": {
+    "type": "preToolUse",
+    "toolTypes": [
+      "*"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "osascript -e 'display notification \"ツールの実行前に権限確認が行われています\" with title \"Kiro\" subtitle \"権限確認\"'"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "操作完了通知",
+  "description": "エージェントの実行が完了したときにToast通知を表示する",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "osascript -e 'display notification \"エージェントの操作が完了しました\" with title \"Kiro\" subtitle \"操作完了\"'"
+  }
+}
