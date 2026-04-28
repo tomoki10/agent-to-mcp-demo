@@ -50,7 +50,7 @@ docker compose down -v
 
 ## 🎯 使用方法
 
-GitHub Copilot Chat / Claude Code で以下のようなクエリを試してみてください：
+任意のAIコーディングエージェントで以下のようなクエリを試してみてください：
 
 ### 基本的なクエリ
 
