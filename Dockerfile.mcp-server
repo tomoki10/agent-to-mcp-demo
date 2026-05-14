@@ -1,18 +1,16 @@
 # Dockerfile for MySQL MCP Server
-FROM python:3.11-slim
+FROM python@sha256:9a7765b36773a37061455b332f18e265e7f58f6fea9c419a550d2a8b0e9db834
+
+# uvのバイナリをダイジェスト固定でコピー
+COPY --from=ghcr.io/astral-sh/uv@sha256:1025398289b62de8269e70c45b91ffa37c373f38118d7da036fb8bb8efc85d97 /uv /usr/local/bin/uv
 
 # 作業ディレクトリの設定
 WORKDIR /app
 
-# システム依存関係のインストール
+# システム依存関係のインストール（git は uv sync の git ソース依存に必要）
 RUN apt-get update && apt-get install -y \
-    curl \
     git \
     && rm -rf /var/lib/apt/lists/*
-
-# uvのインストール
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
 
 # プロジェクトファイルをコピー
 COPY pyproject.toml uv.lock ./
