@@ -4,7 +4,7 @@
     "Stop": [
       {
         "type": "command",
-        "bash": "afplay /System/Library/Sounds/Hero.aiff"
+        "command": "afplay /System/Library/Sounds/Hero.aiff && osascript -e 'display notification \"Copilotエージェントの処理が完了しました\" with title \"Copilot Hook\" sound name \"default\"'"
       }
     ]
   }
