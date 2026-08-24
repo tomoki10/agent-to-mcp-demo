@@ -1,0 +1,23 @@
+{
+  "skill_name": "investigate-cloudwatch",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "直近1時間で /aws/lambda/payment-api の CloudWatch ログからエラーと5xx を洗い出して、件数と代表ログをまとめて。リージョンは ap-northeast-1。",
+      "expected_output": "Logs Insights で期間指定・エラー系フィルタ・ポーリング・JST のレポート（サマリ・ストリーム偏り・所見）が出る",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "本番でタイムアウトが増えたって言われた。ロググループ名はまだ分からない。デフォルトリージョンで Lambda っぽいグループを探してから、過去30分の異常ログを調べてレポートして。",
+      "expected_output": "describe-log-groups で候補提示またはプレフィックス絞り込み後、Insights 実行とレポート",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "次の Insights クエリを /aws/ecs/my-service に対して昨日の9:00〜12:00 JST で実行した結果を解説してほしい: stats count(*) by bin(5m)",
+      "expected_output": "start-time/end-time を JST から Unix 秒に換算し、クエリ実行・結果の時間帯コメント",
+      "files": []
+    }
+  ]
+}
