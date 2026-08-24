@@ -1,3 +1,4 @@
 mcp.local*
 my-video
 .DS_Store
+.claude/hooks
