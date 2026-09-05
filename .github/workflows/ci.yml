@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint (ruff / black / pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: black --check
+        run: uv run black --check .
+
+      - name: pytest
+        run: uv run pytest
+
+  smoke:
+    name: smoke (docker compose + init.sql)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose up -d --wait --wait-timeout 300
+
+      - name: Assert containers are up
+        run: |
+          set -euo pipefail
+          docker compose ps
+
+          mysql_state=$(docker inspect -f '{{.State.Status}}' mysql-mcp-demo)
+          mysql_health=$(docker inspect -f '{{.State.Health.Status}}' mysql-mcp-demo)
+          server_state=$(docker inspect -f '{{.State.Status}}' mysql-mcp-server)
+          echo "mysql: $mysql_state / $mysql_health"
+          echo "mcp-server: $server_state"
+
+          status=0
+          [ "$mysql_state" = "running" ] || { echo "::error::mysql is $mysql_state"; status=1; }
+          [ "$mysql_health" = "healthy" ] || { echo "::error::mysql is $mysql_health"; status=1; }
+          [ "$server_state" = "running" ] || { echo "::error::mcp-server is $server_state"; status=1; }
+          exit $status
+
+      - name: Assert init.sql was applied
+        run: |
+          set -euo pipefail
+
+          run_sql() {
+            docker compose exec -T -e MYSQL_PWD=demo_password mysql \
+              mysql -u demo_user -N -B demo_db -e "$1"
+          }
+
+          status=0
+          assert_eq() {
+            # $1: ラベル, $2: 期待値, $3: 実測値
+            if [ "$3" = "$2" ]; then
+              echo "OK   $1 = $3"
+            else
+              echo "::error::$1: expected $2, got $3"
+              status=1
+            fi
+          }
+
+          assert_eq "base tables" 8 "$(run_sql "
+            SELECT COUNT(*) FROM information_schema.tables
+            WHERE table_schema = 'demo_db' AND table_type = 'BASE TABLE';")"
+          assert_eq "views" 1 "$(run_sql "
+            SELECT COUNT(*) FROM information_schema.views
+            WHERE table_schema = 'demo_db';")"
+
+          # シードデータの件数。init.sql のデータを増減したらこの一覧も更新する。
+          for spec in users:5 categories:6 products:8 coupons:4 orders:12 \
+                      order_items:19 shipping:10 reviews:15 order_summary:12; do
+            name=${spec%%:*}
+            expected=${spec##*:}
+            assert_eq "$name" "$expected" "$(run_sql "SELECT COUNT(*) FROM $name;")"
+          done
+
+          exit $status
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail 200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
